@@ -50,7 +50,8 @@ class block_massaction extends block_base {
         return ['site-index' => false,
             'course-view-weeks' => true,
             'course-view-topics' => true,
-            'course-view-topcoll' => true];
+            'course-view-topcoll' => true
+        ];
     }
 
     /**
