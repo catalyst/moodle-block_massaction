@@ -28,11 +28,11 @@
  *
  * @param int $oldversion
  * @param object $block
- * @return bool
+ * @return bool true if upgrade successfully finished
  * @throws downgrade_exception
  * @throws upgrade_exception
  */
-function xmldb_block_massaction_upgrade($oldversion, $block) {
+function xmldb_block_massaction_upgrade($oldversion, $block): bool {
 
     if ($oldversion < 2022000000) { // Stand-in function.
         upgrade_block_savepoint(true, 2022000000, 'massaction', false);
@@ -85,7 +85,7 @@ function add_supported_format(string $addformat): void {
  * @throws coding_exception
  * @throws dml_exception
  */
-function remove_supported_format(string $removeformat) {
+function remove_supported_format(string $removeformat): void {
     global $DB;
 
     // Get current settings to update.
