@@ -66,7 +66,7 @@ $string['noactionsavailable'] = 'You do not have the permissions to execute any 
 $string['nomovingtargetselected'] = 'Please select a target section';
 $string['sectionnotexist'] = 'Target section does not exist';
 $string['applicablecourseformats'] = 'Applicable course formats';
-$string['applicablecourseformats_description'] = 'Select for which course formats the Mass Actions block should be available for the users. '
+$string['applicablecourseformats_description'] = 'Mass Actions block will only be available for the selected course formats. '
  . 'Preselected defaults are the ones tested and supported by the plugin maintainer. Add other formats at your own risk.';
 $string['unusable'] = 'The mass action functionality cannot be used in this course format or the current theme';
 $string['usage'] = 'Usage of the Mass Actions Block';
