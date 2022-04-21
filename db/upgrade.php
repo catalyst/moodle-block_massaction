@@ -28,9 +28,11 @@
  *
  * @param int $oldversion
  * @param object $block
+ * @return bool
+ * @throws downgrade_exception
+ * @throws upgrade_exception
  */
 function xmldb_block_massaction_upgrade($oldversion, $block) {
-    global $CFG, $DB;
 
     if ($oldversion < 2022000000) { // Stand-in function.
         upgrade_block_savepoint(true, 2022000000, 'massaction', false);
@@ -43,8 +45,10 @@ function xmldb_block_massaction_upgrade($oldversion, $block) {
  * Handles upgrades that add new supported formats.
  *
  * @param string $addformat
+ * @throws coding_exception
+ * @throws dml_exception
  */
-function add_supported_format($addformat) {
+function add_supported_format(string $addformat): void {
     global $DB;
 
     // Get current settings to update.
@@ -60,27 +64,28 @@ function add_supported_format($addformat) {
 
     $supportedformats = [];
     foreach ($plugins as $format => $name) {
-        if (isset($plugins[$format]) &&
+        if (isset($name) &&
             (in_array($format, $selectedformats) ||
-            $format === $addformat)) {
+                $format === $addformat)) {
             $supportedformats[$format] = 1;
         }
     }
 
     // Update settings.
-    $params = array("plugin" => "block_massaction",
-                    "name" => "applicablecourseformats");
-    $setting = $DB->get_record("config_plugins", $params);
+    $params = ['plugin' => 'block_massaction', 'name' => 'applicablecourseformats'];
+    $setting = $DB->get_record('config_plugins', $params);
     $setting->value = implode(',', array_keys($supportedformats));
-    $DB->update_record("config_plugins", $setting);
+    $DB->update_record('config_plugins', $setting);
 }
 
 /**
  * Handles upgrades that remove previously supported formats
  *
  * @param string $removeformat
+ * @throws coding_exception
+ * @throws dml_exception
  */
-function remove_supported_format($removeformat) {
+function remove_supported_format(string $removeformat) {
     global $DB;
 
     // Get current settings to update.
@@ -96,7 +101,7 @@ function remove_supported_format($removeformat) {
 
     $supportedformats = [];
     foreach ($plugins as $format => $name) {
-        if (isset($plugins[$format]) &&
+        if (isset($name) &&
             in_array($format, $selectedformats) &&
             $format !== $removeformat) {
             $supportedformats[$format] = 1;
@@ -104,9 +109,8 @@ function remove_supported_format($removeformat) {
     }
 
     // Update settings.
-    $params = array("plugin" => "block_massaction",
-                    "name" => "applicablecourseformats");
-    $setting = $DB->get_record("config_plugins", $params);
+    $params = ['plugin' => 'block_massaction', 'name' => 'applicablecourseformats'];
+    $setting = $DB->get_record('config_plugins', $params);
     $setting->value = implode(',', array_keys($supportedformats));
-    $DB->update_record("config_plugins", $setting);
+    $DB->update_record('config_plugins', $setting);
 }
