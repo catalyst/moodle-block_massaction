@@ -23,7 +23,21 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Handles upgrading instances of this block.
+ *
+ * @param int $oldversion
+ * @param object $block
+ */
+function xmldb_block_massaction_upgrade($oldversion, $block) {
+    global $CFG, $DB;
+
+    if ($oldversion < 2022000000) { // Stand-in function.
+        upgrade_block_savepoint(true, 2022000000, 'massaction', false);
+    }
+
+    return true;
+}
 
 /**
  * Handles upgrades that add new supported formats.
