@@ -30,19 +30,20 @@ Feature: Check if all the different type of actions of the mass actions block wo
   Scenario: Check if mass actions 'hide' and 'show' work
     When I click on "Test Activity1 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
-    # I have to use this xpath_element because moodle behat misinterpretes the hide icon in the link as 'not visible'
+    # I have to use this xpath_element because moodle behat misinterpretes the hide icon in the button as 'not visible'
     # and fails because of it
-    And I click on "//i[@aria-label='Hide']" "xpath_element" in the "Mass Actions" "block"
+    #And I click on "//i[@aria-label='Hide']" "xpath_element" in the "Mass Actions" "block"
+    And I click on "Hide" "button" in the "Mass Actions" "block"
     Then "Test Activity1" activity should be hidden
     And "Test Activity4" activity should be hidden
     When I click on "Test Activity1 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
-    And I click on "Show" "link" in the "Mass Actions" "block"
+    And I click on "Show" "button" in the "Mass Actions" "block"
     Then "Test Activity1" activity should be visible
     And "Test Activity4" activity should be visible
     When I click on "Test Activity1 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
-    And I click on "Make available" "link" in the "Mass Actions" "block"
+    And I click on "Make available" "button" in the "Mass Actions" "block"
     And I open "Test Activity1" actions menu
     Then "Test Activity1" actions menu should have "Make unavailable" item
     When I open "Test Activity4" actions menu
@@ -57,8 +58,8 @@ Feature: Check if all the different type of actions of the mass actions block wo
   Scenario: Check if mass action 'move to section' works
     When I click on "Test Activity1 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
-    And I set the field "Move to section" in the "Mass Actions" "block" to "Topic 3"
-    And I click on "Move to section" "link" in the "Mass Actions" "block"
+    And I set the field "Target section for moving" in the "Mass Actions" "block" to "Topic 3"
+    And I click on "Move to section" "button" in the "Mass Actions" "block"
     Then I should see "Test Activity1" in the "Topic 3" "section"
     And I should see "Test Activity4" in the "Topic 3" "section"
 
@@ -67,7 +68,8 @@ Feature: Check if all the different type of actions of the mass actions block wo
     When I click on "Test Activity1 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
     # Again moodle behat has some issues for no understandable reason, so I have to use xpath again.
-    And I click on "//i[@aria-label='Delete']" "xpath_element" in the "Mass Actions" "block"
+    #And I click on "//i[@aria-label='Delete']" "xpath_element" in the "Mass Actions" "block"
+    And I click on "Delete" "button" in the "Mass Actions" "block"
     And I click on "Delete" "button"
     Then I should not see "Test Activity1"
     And I should not see "Test Activity4"
@@ -77,7 +79,7 @@ Feature: Check if all the different type of actions of the mass actions block wo
     When I click on "Test Activity2 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
     And I click on "Test Activity5 Checkbox" "checkbox"
-    And I click on "Duplicate" "link" in the "Mass Actions" "block"
+    And I click on "Duplicate" "button" in the "Mass Actions" "block"
     Then I should see "Test Activity2 (copy)" in the "Topic 1" "section"
     And I should see "Test Activity4 (copy)" in the "Topic 4" "section"
     And I should see "Test Activity5 (copy)" in the "Topic 4" "section"
@@ -87,8 +89,8 @@ Feature: Check if all the different type of actions of the mass actions block wo
     When I click on "Test Activity2 Checkbox" "checkbox"
     And I click on "Test Activity4 Checkbox" "checkbox"
     And I click on "Test Activity5 Checkbox" "checkbox"
-    And I set the field "Duplicate to section" in the "Mass Actions" "block" to "Topic 3"
-    And I click on "Duplicate to section" "link" in the "Mass Actions" "block"
+    And I set the field "Target section for duplicating" in the "Mass Actions" "block" to "Topic 3"
+    And I click on "Duplicate to section" "button" in the "Mass Actions" "block"
     Then I should see "Test Activity2" in the "Topic 1" "section"
     And I should see "Test Activity4" in the "Topic 4" "section"
     And I should see "Test Activity5" in the "Topic 4" "section"
