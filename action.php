@@ -124,5 +124,8 @@ switch ($data->action) {
 
 if ($data->action !== "delete" || $deletionconfirmed) {
     // Redirect back to the previous page.
-    redirect($returnurl);
+    // If an error has occurred, the action handler functions already should have thrown an exception to the user, so if we get to
+    // this point in the code, the demanded action should have been successful.
+    redirect($returnurl, get_string('actionexecuted', 'block_massaction'), null,
+        notification::NOTIFY_SUCCESS);
 }
