@@ -209,7 +209,9 @@ class actions {
         if ($sectionnum == -1) {
             // In case no target section is specified we make sure that enough sections in the target course exist before
             // duplicating, so each course module will be restored to the section number it has in the source course.
-            $sourcecoursemaxsectionnum = max(array_map(fn($mod) => $sourcemodinfo->get_cm($mod->id)->sectionnum, $modules));
+            $sourcecoursemaxsectionnum = max(array_map(function($mod) use ($sourcemodinfo) {
+                return $sourcemodinfo->get_cm($mod->id)->sectionnum;
+            }, $modules));
             // We need to subtract 1 because there is section 0.
             $targetcoursemaxsectionnum = count($targetmodinfo->get_section_info_all()) - 1;
 
