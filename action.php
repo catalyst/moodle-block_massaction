@@ -45,6 +45,10 @@ $modulerecords = $data->modulerecords;
 
 $context = $context->get_course_context();
 // Dispatch the submitted action.
+
+// Redirect to course by default.
+$redirect = true;
+
 switch ($data->action) {
     case 'moveleft':
         require_capability('moodle/course:manageactivities', $context);
@@ -86,6 +90,7 @@ switch ($data->action) {
     case 'delete':
         require_capability('moodle/course:manageactivities', $context);
         if (!$deletionconfirmed) {
+            $redirect = false;
             block_massaction\actions::print_deletion_confirmation($modulerecords, $massactionrequest, $instanceid, $returnurl);
         } else {
             block_massaction\actions::perform_deletion($modulerecords);
@@ -132,6 +137,7 @@ switch ($data->action) {
         ];
 
         if (empty($targetcourseid)) {
+            $redirect = false;
             // Show the course selector.
             echo $OUTPUT->header();
             echo $OUTPUT->box_start('generalbox block-massaction-courseselectbox', 'block_massaction-course-select-box');
@@ -171,6 +177,7 @@ switch ($data->action) {
                     notification::NOTIFY_SUCCESS);
 
             } else {
+                $redirect = false;
                 echo $OUTPUT->header();
                 echo $OUTPUT->box_start('generalbox block-massaction-sectionselectbox', 'block_massaction-section-select-box');
                 $sectionselectform->display();
@@ -183,7 +190,7 @@ switch ($data->action) {
         throw new moodle_exception('invalidaction', 'block_massaction', $data->action);
 }
 
-if ($data->action !== "delete" || $deletionconfirmed) {
+if ($redirect) {
     // Redirect back to the previous page.
     // If an error has occurred, the action handler functions already should have thrown an exception to the user, so if we get to
     // this point in the code, the demanded action should have been successful.
