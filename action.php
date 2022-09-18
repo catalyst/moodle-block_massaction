@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_massaction\form\course_select_form;
 use block_massaction\task\duplicate_task;
 use core\output\notification;
 use core\task\manager;
@@ -116,6 +117,66 @@ switch ($data->action) {
                 notification::NOTIFY_SUCCESS);
         } else {
             block_massaction\actions::duplicate($modulerecords, $data->duplicateToTarget);
+        }
+        break;
+    case 'duplicatetocourse':
+        $PAGE->set_context($context);
+        $PAGE->set_url($CFG->wwwroot . '/blocks/massaction/action.php');
+        $targetcourseid = optional_param('targetcourseid', 0, PARAM_INT);
+
+        $options = [
+            'request' => $massactionrequest,
+            'instance_id' => $instanceid,
+            'return_url' => $returnurl,
+            'sourcecourseid' => $context->instanceid
+        ];
+
+        if (empty($targetcourseid)) {
+            // Show the course selector.
+            echo $OUTPUT->header();
+            echo $OUTPUT->box_start('generalbox block-massaction-courseselectbox', 'block_massaction-course-select-box');
+            $courseselectform = new course_select_form(null, $options);
+            $courseselectform->display();
+            echo $OUTPUT->box_end();
+            echo $OUTPUT->footer();
+        } else {
+            $options['targetcourseid'] = $targetcourseid;
+
+            require_capability('moodle/backup:backuptargetimport', $context);
+            require_capability('moodle/restore:restoretargetimport', context_course::instance($targetcourseid));
+
+            $sectionselectform = new block_massaction\form\section_select_form(null, $options);
+            if ($sectionselectform->is_cancelled()) {
+                redirect($returnurl);
+            } else if ($data = $sectionselectform->get_data()) {
+
+                // We validate the section number and default to 'same section than source course' if it is not a proper section
+                // number.
+                $targetsectionnum = property_exists($data, 'targetsectionnum') && is_numeric($data->targetsectionnum)
+                    ? $data->targetsectionnum : -1;
+
+                if (get_config('block_massaction', 'duplicatemaxactivities') < count($modulerecords)) {
+                    $duplicatetask = new duplicate_task();
+                    $duplicatetask->set_userid($USER->id);
+                    $duplicatetask->set_custom_data(['modules' => $modulerecords, 'sectionnum' => $targetsectionnum,
+                        'courseid' => $targetcourseid]);
+                    manager::queue_adhoc_task($duplicatetask);
+                    redirect($returnurl, get_string('backgroundtaskinformation', 'block_massaction'), null,
+                        notification::NOTIFY_SUCCESS);
+                } else {
+                    block_massaction\actions::duplicate_to_course($modulerecords, $targetcourseid, $targetsectionnum);
+                }
+
+                redirect($returnurl, get_string('actionexecuted', 'block_massaction'), null,
+                    notification::NOTIFY_SUCCESS);
+
+            } else {
+                echo $OUTPUT->header();
+                echo $OUTPUT->box_start('generalbox block-massaction-sectionselectbox', 'block_massaction-section-select-box');
+                $sectionselectform->display();
+                echo $OUTPUT->box_end();
+                echo $OUTPUT->footer();
+            }
         }
         break;
     default:
