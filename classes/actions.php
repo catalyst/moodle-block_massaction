@@ -27,6 +27,8 @@ namespace block_massaction;
 
 use base_plan_exception;
 use base_setting_exception;
+use block_massaction\form\course_select_form;
+use block_massaction\form\section_select_form;
 use coding_exception;
 use context_course;
 use core\event\course_module_updated;
@@ -246,6 +248,38 @@ class actions {
                 moveto_module($targetmodinfo->get_cm($modid), $targetsection);
             }
         }
+    }
+
+    /**
+     * Prints the course select form.
+     *
+     * @param course_select_form $courseselectform
+     * @return void
+     */
+    public static function print_course_select_form(course_select_form $courseselectform): void {
+        global $OUTPUT;
+        // Show the course selector.
+        echo $OUTPUT->header();
+        echo $OUTPUT->box_start('generalbox block-massaction-courseselectbox', 'block_massaction-course-select-box');
+        $courseselectform->display();
+        echo $OUTPUT->box_end();
+        echo $OUTPUT->footer();
+    }
+
+    /**
+     * Prints the section select form.
+     *
+     * @param section_select_form $sectionselectform
+     * @return void
+     */
+    public static function print_section_select_form(section_select_form $sectionselectform): void {
+        global $OUTPUT;
+        // Show the section selector.
+        echo $OUTPUT->header();
+        echo $OUTPUT->box_start('generalbox block-massaction-sectionselectbox', 'block_massaction-section-select-box');
+        $sectionselectform->display();
+        echo $OUTPUT->box_end();
+        echo $OUTPUT->footer();
     }
 
     /**

@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_massaction\actions;
 use block_massaction\form\course_select_form;
 use block_massaction\task\duplicate_task;
 use core\output\notification;
@@ -142,12 +143,7 @@ switch ($data->action) {
         }
         if (empty($targetcourseid)) {
             $redirect = false;
-            // Show the course selector.
-            echo $OUTPUT->header();
-            echo $OUTPUT->box_start('generalbox block-massaction-courseselectbox', 'block_massaction-course-select-box');
-            $courseselectform->display();
-            echo $OUTPUT->box_end();
-            echo $OUTPUT->footer();
+            actions::print_course_select_form($courseselectform);
         } else {
             $options['targetcourseid'] = $targetcourseid;
 
@@ -156,7 +152,10 @@ switch ($data->action) {
 
             $sectionselectform = new block_massaction\form\section_select_form(null, $options);
             if ($sectionselectform->is_cancelled()) {
-                redirect($returnurl);
+                $redirect = false;
+                // Show the course selector.
+                actions::print_course_select_form($courseselectform);
+                break;
             } else if ($data = $sectionselectform->get_data()) {
 
                 // We validate the section number and default to 'same section than source course' if it is not a proper section
@@ -181,11 +180,7 @@ switch ($data->action) {
 
             } else {
                 $redirect = false;
-                echo $OUTPUT->header();
-                echo $OUTPUT->box_start('generalbox block-massaction-sectionselectbox', 'block_massaction-section-select-box');
-                $sectionselectform->display();
-                echo $OUTPUT->box_end();
-                echo $OUTPUT->footer();
+                actions::print_section_select_form($sectionselectform);
             }
         }
         break;
