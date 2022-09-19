@@ -136,12 +136,15 @@ switch ($data->action) {
             'sourcecourseid' => $context->instanceid
         ];
 
+        $courseselectform = new course_select_form(null, $options);
+        if ($courseselectform->is_cancelled()) {
+            redirect($returnurl);
+        }
         if (empty($targetcourseid)) {
             $redirect = false;
             // Show the course selector.
             echo $OUTPUT->header();
             echo $OUTPUT->box_start('generalbox block-massaction-courseselectbox', 'block_massaction-course-select-box');
-            $courseselectform = new course_select_form(null, $options);
             $courseselectform->display();
             echo $OUTPUT->box_end();
             echo $OUTPUT->footer();
