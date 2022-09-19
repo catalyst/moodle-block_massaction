@@ -206,6 +206,12 @@ class actions {
         $sourcemodinfo = get_fast_modinfo($sourcecourseid);
         $targetmodinfo = get_fast_modinfo($targetcourseid);
 
+        // If a the target section number has been specified and there is no such target section, we do nothing.
+        // This should have been prevented by the UI anyway, but we want to be extra safe here.
+        if ($sectionnum != -1 && $sectionnum > count($targetmodinfo->get_section_info_all()) - 1) {
+            return;
+        }
+
         if ($sectionnum == -1) {
             // In case no target section is specified we make sure that enough sections in the target course exist before
             // duplicating, so each course module will be restored to the section number it has in the source course.
