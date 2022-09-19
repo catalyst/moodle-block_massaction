@@ -82,11 +82,7 @@
 .block-massaction-sectionselectbox {
     display: flex;
     justify-content: center;
-}
-
-#id_choosetargetcourse,
-#id_choosetargetsection {
-    height: 60vh;
+    min-height: 60vh;
 }
 
 .block-massaction-courseselectbox form,
