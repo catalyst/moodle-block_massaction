@@ -81,8 +81,10 @@ function block_massaction_add_supported_format(string $addformat): void {
     // Update settings.
     $params = ['plugin' => 'block_massaction', 'name' => 'applicablecourseformats'];
     $setting = $DB->get_record('config_plugins', $params);
-    $setting->value = implode(',', array_keys($supportedformats));
-    $DB->update_record('config_plugins', $setting);
+    if (!empty($setting)) {
+        $setting->value = implode(',', array_keys($supportedformats));
+        $DB->update_record('config_plugins', $setting);
+    }
 }
 
 /**
