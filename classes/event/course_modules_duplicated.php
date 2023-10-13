@@ -19,7 +19,7 @@ namespace block_massaction\event;
 use core\event\base;
 
 /**
- * The massaction_duplicated event class.
+ * The course_modules_duplicated event class.
  *
  * @package     block_massaction
  * @category    event
@@ -27,7 +27,7 @@ use core\event\base;
  * @copyright   2023 Catalyst IT
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class massaction_duplicated extends base {
+class course_modules_duplicated extends base {
 
     /**
      * Initialise required event data properties.
@@ -43,17 +43,27 @@ class massaction_duplicated extends base {
      * @return string
      */
     public static function get_name(): string {
-        return get_string('event:massaction_duplicated', 'block_massaction');
+        return get_string('event:course_modules_duplicated', 'block_massaction');
     }
 
+    /**
+     * Return localised event description.
+     *
+     * @return string
+     */
     public function get_description(): string {
         $cms = [];
+        $failed = [];
         foreach ($this->other['cms'] as $srccm => $dstcm) {
             $cms[] = 'cmid from \'' . $srccm . '\' to \'' . $dstcm . '\'';
         }
-        $errormsg = !empty($this->other['errors']) ? " with error '" . implode("','", $this->other['errors']) : "'";
-        return "Mass action duplicate has been completed. " . implode(", ", $cms)
-            . $errormsg;
+        foreach ($this->other['failed'] as $cmid) {
+            $failed[] = 'cmid \'' . $cmid . '\'';
+        }
+        return 'Course modules duplicate has been completed. '
+            . 'Summary: ' . count($cms) . ' Completed, ' . count($failed) . ' Failed.'
+            . ($cms ? ' Completed ' . implode(", ", $cms) . '.' : '')
+            . ($failed ? ' Failed ' . implode(", ", $failed) . '.' : '');
     }
 
     /**
@@ -66,6 +76,9 @@ class massaction_duplicated extends base {
 
         if (!isset($this->other['cms']) || !is_array($this->other['cms'])) {
             throw new \coding_exception('The \'cms\' value must be array and set in other.');
+        }
+        if (!isset($this->other['failed']) || !is_array($this->other['failed'])) {
+            throw new \coding_exception('The \'failed\' value must be array and set in other.');
         }
     }
 }

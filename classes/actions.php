@@ -153,7 +153,7 @@ class actions {
             try {
                 $duplicatedmod = duplicate_module($modinfo->get_course(), $modinfo->get_cm($cmid));
             } catch (\Exception $e) {
-                $errors[] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
+                $errors[$cmid] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
                 continue;
             }
             $cms[$cmid] = $duplicatedmod->id;
@@ -175,14 +175,26 @@ class actions {
             // Move each module to the end of their section.
             moveto_module($duplicatedmod, $section);
         }
-        $event = \block_massaction\event\massaction_duplicated::create([
+        $event = \block_massaction\event\course_modules_duplicated::create([
             'context' => \context_course::instance($courseid),
             'other' => [
                 'cms' => $cms,
-                'errors' => $errors,
+                'failed' => array_keys($errors),
             ],
         ]);
         $event->trigger();
+        if ($errors) {
+            foreach ($errors as $cmid => $error) {
+                $event = \block_massaction\event\course_modules_duplicated_failed::create([
+                    'context' => \context_course::instance($courseid),
+                    'other' => [
+                        'cmid' => $cmid,
+                        'error' => $error,
+                    ],
+                ]);
+                $event->trigger();
+            }
+        }
     }
 
     /**
@@ -278,8 +290,16 @@ class actions {
         // Let order of mods in a section be mod1, mod2, mod3, mod4, mod5. If we duplicate mod2, mod4, the order afterwards will be
         // mod1, mod2, mod3, mod4, mod5, mod2(dup), mod4(dup).
         $duplicatedmods = [];
+        $cms = [];
+        $errors = [];
         foreach ($idsincourseorder as $cmid) {
-            $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(), $sourcemodinfo->get_cm($cmid));
+            try {
+                $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(), $sourcemodinfo->get_cm($cmid));
+            } catch (\Exception $e) {
+                $errors[$cmid] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
+                continue;
+            }
+            $cms[$cmid] = $duplicatedmod;
             $duplicatedmods[] = $duplicatedmod;
         }
 
@@ -290,6 +310,26 @@ class actions {
             // A target section has been specified, so we have to move the course modules.
             foreach ($duplicatedmods as $modid) {
                 moveto_module($targetmodinfo->get_cm($modid), $targetsection);
+            }
+        }
+        $event = \block_massaction\event\course_modules_duplicated::create([
+            'context' => \context_course::instance($targetcourseid),
+            'other' => [
+                'cms' => $cms,
+                'failed' => array_keys($errors),
+            ],
+        ]);
+        $event->trigger();
+        if ($errors) {
+            foreach ($errors as $cmid => $error) {
+                $event = \block_massaction\event\course_modules_duplicated_failed::create([
+                    'context' => \context_course::instance($targetcourseid),
+                    'other' => [
+                        'cmid' => $cmid,
+                        'error' => $error,
+                    ],
+                ]);
+                $event->trigger();
             }
         }
     }
