@@ -493,6 +493,61 @@ class massaction_test extends advanced_testcase {
     }
 
     /**
+     * Tests duplicating multiple modules something error in the middle of the process.
+     *
+     * @covers \block_massaction\actions::duplicate
+     * @return void
+     * @throws require_login_exception
+     * @throws restore_controller_exception
+     * @throws dml_exception
+     * @throws moodle_exception
+     */
+    public function test_mass_duplicate_modules_failing_in_the_middle(): void {
+        global $DB;
+        // Delete one module record to fail to duplicate for the module.
+        $modinfo = get_fast_modinfo($this->course->id);
+        $assigncms = $modinfo->get_instances_of('assign');
+        $assigncm = reset($assigncms);
+        $DB->execute('DELETE FROM {assign} WHERE id = ' . $assigncm->instance);
+        $coursemodules = $this->get_test_course_modules();
+
+        // Prepare redirect Events.
+        $sink = $this->redirectEvents();
+
+        block_massaction\actions::duplicate($coursemodules);
+
+        $newcoursemodules = $this->get_test_course_modules();
+
+        // Check error message.
+        $events = $sink->get_events();
+        $sink->close();
+        $created = 0;
+        $duplicated = 0;
+        foreach ($events as $event) {
+            $class = get_class($event);
+            switch ($class) {
+                case \core\event\course_module_created::class:
+                    $created++;
+                    break;
+                case \block_massaction\event\massaction_duplicated::class:
+                    $duplicated++;
+                    $eventduplicated = $event;
+                    break;
+            }
+        }
+
+        // Modules are duplicated except one deleted module.
+        $this->assertEquals(count($coursemodules) * 2 - 1, count($newcoursemodules));
+        $this->assertEquals(count($coursemodules) - 1, $created);
+        $this->assertEquals(1, $duplicated);
+        $data = $eventduplicated->get_data();
+        $errors = $data['other']['errors'];
+        $this->assertCount(1, $errors);
+        $error = reset($errors);
+        $this->assertStringStartsWith('cmid:' . $assigncm->id, $error);
+    }
+
+    /**
      * Tests the duplicating of multiple modules to a different course.
      *
      * @covers \block_massaction\actions::duplicate_to_course

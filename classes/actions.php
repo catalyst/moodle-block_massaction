@@ -147,8 +147,16 @@ class actions {
         // sorted by their id:
         // Let order of mods in a section be mod1, mod2, mod3, mod4, mod5. If we duplicate mod2, mod4, the order afterwards will be
         // mod1, mod2, mod3, mod4, mod5, mod2(dup), mod4(dup).
+        $cms = [];
+        $errors = [];
         foreach ($idsincourseorder as $cmid) {
-            $duplicatedmod = duplicate_module($modinfo->get_course(), $modinfo->get_cm($cmid));
+            try {
+                $duplicatedmod = duplicate_module($modinfo->get_course(), $modinfo->get_cm($cmid));
+            } catch (\Exception $e) {
+                $errors[] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
+                continue;
+            }
+            $cms[$cmid] = $duplicatedmod->id;
             $duplicatedmods[] = $duplicatedmod;
         }
 
@@ -167,6 +175,14 @@ class actions {
             // Move each module to the end of their section.
             moveto_module($duplicatedmod, $section);
         }
+        $event = \block_massaction\event\massaction_duplicated::create([
+            'context' => \context_course::instance($courseid),
+            'other' => [
+                'cms' => $cms,
+                'errors' => $errors,
+            ],
+        ]);
+        $event->trigger();
     }
 
     /**
