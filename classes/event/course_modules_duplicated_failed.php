@@ -59,8 +59,6 @@ class course_modules_duplicated_failed extends base {
 
     /**
      * Validates the custom data.
-     *
-     * @throws \coding_exception if missing required data.
      */
     protected function validate_data() {
         parent::validate_data();

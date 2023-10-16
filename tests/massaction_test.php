@@ -497,10 +497,6 @@ class massaction_test extends advanced_testcase {
      *
      * @covers \block_massaction\actions::duplicate
      * @return void
-     * @throws require_login_exception
-     * @throws restore_controller_exception
-     * @throws dml_exception
-     * @throws moodle_exception
      */
     public function test_mass_duplicate_modules_failing_in_the_middle(): void {
         global $DB;
