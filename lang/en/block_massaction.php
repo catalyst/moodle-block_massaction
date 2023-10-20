@@ -24,7 +24,14 @@
  */
 
 $string['pluginname'] = 'Mass Actions';
+$string['massaction:activityshowhide'] = 'Mass show/hide';
 $string['massaction:addinstance'] = 'Add a new Mass Actions Block';
+$string['massaction:delete'] = 'Mass delete';
+$string['massaction:descriptionshowhide'] = 'Mass description show/hide';
+$string['massaction:duplicate'] = 'Mass duplicate';
+$string['massaction:duplicatetocourse'] = 'Mass duplicate to course';
+$string['massaction:indent'] = 'Mass indent';
+$string['massaction:movetosection'] = 'Mass move to section';
 $string['massaction:use'] = 'Use the Mass Actions block';
 $string['massaction:sendcontentchangednotifications'] = 'Send content changed notifications';
 $string['blockname'] = 'Mass Actions';
