@@ -290,7 +290,8 @@ class actions {
         $errors = [];
         foreach ($idsincourseorder as $cmid) {
             try {
-                $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(), $sourcemodinfo->get_cm($cmid));
+                $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(),
+                    $sourcemodinfo->get_cm($cmid));
             } catch (\Exception $e) {
                 $errors[$cmid] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
                 $event = \block_massaction\event\course_modules_duplicated_failed::create([
