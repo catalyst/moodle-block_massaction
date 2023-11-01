@@ -164,4 +164,20 @@ class massactionutils {
         }
         return $newcmid;
     }
+
+    /**
+     * Get restricted sections from course format callback.
+     *
+     * @param int $courseid
+     * @param string $format
+     * @return array
+     */
+    public static function get_restricted_sections($courseid, $format): array {
+        $sectionsrestricted = [];
+        $callbacks = get_plugins_with_function('massaction_restricted_sections');
+        if (!empty($callbacks['format'][$format])) {
+            $sectionsrestricted = $callbacks['format'][$format]($courseid);
+        }
+        return $sectionsrestricted;
+    }
 }
