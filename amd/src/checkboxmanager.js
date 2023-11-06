@@ -309,7 +309,7 @@ const disableInvisibleAndEmptySections = (sections) => {
 const disableRestrictedSections = (elementId, sectionsRestricted) => {
     Array.prototype.forEach.call(document.getElementById(elementId).options, option => {
         // Disable every element which is in the sectionsRestricted list.
-        if (sectionsRestricted[option.value] !== undefined) {
+        if (sectionsRestricted.includes(parseInt(option.value))) {
             option.disabled = true;
         } else {
             option.disabled = false;

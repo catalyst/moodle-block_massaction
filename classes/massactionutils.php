@@ -166,7 +166,8 @@ class massactionutils {
     }
 
     /**
-     * Get restricted sections from course format callback.
+     * Get array of restricted sections from course format callback.
+     * Example return values from pluginname_massaction_restricted_sections: [1, 3, 5]
      *
      * @param int $courseid
      * @param string $format

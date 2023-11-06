@@ -122,7 +122,7 @@ class section_select_form extends moodleform {
         // Now add the sections of the target course.
         foreach ($targetsections as $sectionnum => $sectionname) {
             $attributes = ['class' => 'mt-2'];
-            if (isset($sectionsrestricted[$sectionnum])) {
+            if (in_array($sectionnum, $sectionsrestricted)) {
                 $attributes['disabled'] = 'disabled';
             }
             $radioarray[] = $mform->createElement('radio', 'targetsectionnum',
