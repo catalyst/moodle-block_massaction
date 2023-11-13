@@ -149,8 +149,16 @@ class actions {
         // mod1, mod2, mod3, mod4, mod5, mod2(dup), mod4(dup).
         $cms = [];
         $errors = [];
+        $duplicatedmods = [];
+        $targetformat = course_get_format($courseid);
+        $sectionsrestricted = massactionutils::get_restricted_sections($courseid, $targetformat->get_format());
         foreach ($idsincourseorder as $cmid) {
             try {
+                $cm = $modinfo->get_cm($cmid);
+                // Not duplicated if the section is restricted.
+                if (in_array($cm->sectionnum, $sectionsrestricted)) {
+                    continue;
+                }
                 $duplicatedmod = duplicate_module($modinfo->get_course(), $modinfo->get_cm($cmid));
             } catch (\Exception $e) {
                 $errors[$cmid] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
@@ -288,10 +296,16 @@ class actions {
         $duplicatedmods = [];
         $cms = [];
         $errors = [];
+        $sourceformat = course_get_format($sourcecourseid);
+        $sourcesectionsrestricted = massactionutils::get_restricted_sections($sourcecourseid, $sourceformat->get_format());
         foreach ($idsincourseorder as $cmid) {
             try {
-                $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(),
-                    $sourcemodinfo->get_cm($cmid));
+                $sourcecm = $sourcemodinfo->get_cm($cmid);
+                // Not duplicated if the section is restricted.
+                if (in_array($sourcecm->sectionnum, $sourcesectionsrestricted)) {
+                    continue;
+                }
+                $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(), $sourcecm);
             } catch (\Exception $e) {
                 $errors[$cmid] = 'cmid:' . $cmid . '(' . $e->getMessage() . ')';
                 $event = \block_massaction\event\course_modules_duplicated_failed::create([
@@ -545,6 +559,8 @@ class actions {
         require_once($CFG->dirroot . '/course/lib.php');
 
         $idsincourseorder = self::sort_course_order($modules);
+        $targetformat = course_get_format(reset($modules)->course);
+        $sectionsrestricted = massactionutils::get_restricted_sections(reset($modules)->course, $targetformat->get_format());
 
         foreach ($idsincourseorder as $cmid) {
             if (!$cm = get_coursemodule_from_id('', $cmid, 0, true)) {
@@ -554,6 +570,11 @@ class actions {
             // Verify target.
             if (!$section = $DB->get_record('course_sections', array('course' => $cm->course, 'section' => $target))) {
                 throw new moodle_exception('sectionnotexist', 'block_massaction');
+            }
+
+            // Not moving if the section is restricted.
+            if (in_array($cm->sectionnum, $sectionsrestricted)) {
+                continue;
             }
 
             // Move each module to the end of their section.
