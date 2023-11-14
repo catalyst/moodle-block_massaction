@@ -559,8 +559,11 @@ class actions {
         require_once($CFG->dirroot . '/course/lib.php');
 
         $idsincourseorder = self::sort_course_order($modules);
-        $targetformat = course_get_format(reset($modules)->course);
-        $sectionsrestricted = massactionutils::get_restricted_sections(reset($modules)->course, $targetformat->get_format());
+        $sectionsrestricted = [];
+        if (!empty($modules)) {
+            $targetformat = course_get_format(reset($modules)->course);
+            $sectionsrestricted = massactionutils::get_restricted_sections(reset($modules)->course, $targetformat->get_format());
+        }
 
         foreach ($idsincourseorder as $cmid) {
             if (!$cm = get_coursemodule_from_id('', $cmid, 0, true)) {
