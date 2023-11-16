@@ -307,12 +307,14 @@ const disableInvisibleAndEmptySections = (sections) => {
  * @param {[]} sectionsRestricted the sections which are restrected for the course format
  */
 const disableRestrictedSections = (elementId, sectionsRestricted) => {
-    Array.prototype.forEach.call(document.getElementById(elementId).options, option => {
-        // Disable every element which is in the sectionsRestricted list.
-        if (sectionsRestricted.includes(parseInt(option.value))) {
-            option.disabled = true;
-        } else {
-            option.disabled = false;
-        }
-    });
+    if (document.getElementById(elementId) !== null) {
+        Array.prototype.forEach.call(document.getElementById(elementId).options, option => {
+            // Disable every element which is in the sectionsRestricted list.
+            if (sectionsRestricted.includes(parseInt(option.value))) {
+                option.disabled = true;
+            } else {
+                option.disabled = false;
+            }
+        });
+    }
 };
