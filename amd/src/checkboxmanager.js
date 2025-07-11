@@ -110,7 +110,7 @@ export const getSelectedModIds = () => {
     for (let sectionNumber in sectionBoxes) {
         for (let i = 0; i < sectionBoxes[sectionNumber].length; i++) {
             const checkbox = document.getElementById(sectionBoxes[sectionNumber][i].boxId);
-            if (checkbox.checked) {
+            if (checkbox && checkbox.checked) {
                 moduleIds.push(sectionBoxes[sectionNumber][i].moduleId);
             }
         }
