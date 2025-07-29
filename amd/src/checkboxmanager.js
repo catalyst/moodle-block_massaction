@@ -135,7 +135,10 @@ export const setSectionSelection = (value, sectionNumber) => {
         // See if we are toggling all sections.
         for (const sectionId in sectionBoxes) {
             for (let j = 0; j < sectionBoxes[sectionId].length; j++) {
-                boxIds.push(sectionBoxes[sectionId][j].boxId);
+                let boxId = sectionBoxes[sectionId][j].boxId;
+                if (document.getElementById(boxId) !== null) {
+                    boxIds.push(sectionBoxes[sectionId][j].boxId);
+                }
             }
         }
     } else {
