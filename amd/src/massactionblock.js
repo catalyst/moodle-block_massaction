@@ -29,6 +29,8 @@ import Notification from 'core/notification';
 import Pending from 'core/pending';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
 import events from "core_course/events";
+import {selectAllBulk, toggleBulkSelectionAction} from 'core_courseformat/local/content/actions/bulkselection';
+import {getCheckboxes} from 'block_massaction/checkboxmanager';
 
 export const usedMoodleCssClasses = {
     ACTIVITY_ITEM: '.activity-item',
@@ -117,10 +119,13 @@ export const init = async() => {
         .catch(error => Log.debug(error));
 
     document.getElementById(cssIds.SELECT_ALL_LINK)?.addEventListener('click',
-        () => checkboxmanager.setSectionSelection(true, constants.SECTION_NUMBER_ALL_PLACEHOLDER), false);
+        (event) => {
+            toggleBulkSelectionAction(editor, document.getElementById(getCheckboxes()[0].boxId), event, 'cm');
+            selectAllBulk(editor, true);
+        }, false);
 
     document.getElementById(cssIds.DESELECT_ALL_LINK)?.addEventListener('click',
-        () => checkboxmanager.setSectionSelection(false, constants.SECTION_NUMBER_ALL_PLACEHOLDER), false);
+        () => selectAllBulk(editor, false), false);
 
     document.getElementById(cssIds.HIDE_LINK)?.addEventListener('click',
         () => submitAction(actions.HIDE), false);

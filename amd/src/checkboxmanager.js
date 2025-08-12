@@ -106,18 +106,18 @@ const rebuildLocalState = () => {
  * @returns {[]} Array of module ids currently being selected
  */
 export const getSelectedModIds = () => {
-    const moduleIds = [];
-    for (let sectionNumber in sectionBoxes) {
-        for (let i = 0; i < sectionBoxes[sectionNumber].length; i++) {
-            const checkbox = document.getElementById(sectionBoxes[sectionNumber][i].boxId);
-            if (checkbox && checkbox.checked) {
-                moduleIds.push(sectionBoxes[sectionNumber][i].moduleId);
-            }
-        }
-    }
-    return moduleIds;
+    return getCheckboxes().filter(box => document.getElementById(box.boxId)?.checked).map(box => box.moduleId);
 };
 
+/**
+ * Returns the checkboxes currently present.
+ *
+ * @returns {[]} Array of checkboxes currently present.
+ */
+export const getCheckboxes = () => {
+    const checkboxes = Object.values(sectionBoxes).flat();
+    return checkboxes.filter(box => document.getElementById(box.boxId));
+};
 /**
  * Select all module checkboxes in section(s).
  *
@@ -135,10 +135,7 @@ export const setSectionSelection = (value, sectionNumber) => {
         // See if we are toggling all sections.
         for (const sectionId in sectionBoxes) {
             for (let j = 0; j < sectionBoxes[sectionId].length; j++) {
-                let boxId = sectionBoxes[sectionId][j].boxId;
-                if (document.getElementById(boxId) !== null) {
-                    boxIds.push(sectionBoxes[sectionId][j].boxId);
-                }
+                boxIds.push(sectionBoxes[sectionId][j].boxId);
             }
         }
     } else {
