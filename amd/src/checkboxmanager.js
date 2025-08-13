@@ -103,10 +103,11 @@ const rebuildLocalState = () => {
 /**
  * Returns the currently selected module ids.
  *
+ * @param {[]} checkboxes Array of checkboxes currently present.
  * @returns {[]} Array of module ids currently being selected
  */
-export const getSelectedModIds = () => {
-    return getCheckboxes().filter(box => document.getElementById(box.boxId)?.checked).map(box => box.moduleId);
+export const getSelectedModIds = (checkboxes) => {
+    return checkboxes.filter(box => document.getElementById(box.boxId)?.checked).map(box => box.moduleId);
 };
 
 /**
@@ -118,6 +119,7 @@ export const getCheckboxes = () => {
     const checkboxes = Object.values(sectionBoxes).flat();
     return checkboxes.filter(box => document.getElementById(box.boxId));
 };
+
 /**
  * Select all module checkboxes in section(s).
  *
