@@ -64,7 +64,6 @@ class actions {
         }
 
         $courseid = reset($modules)->course;
-        massactionutils::enforce_cm_restrictions($courseid, $modules);
 
         foreach ($modules as $cm) {
             $cm->indent += $amount;
@@ -94,9 +93,6 @@ class actions {
         if (empty($modules)) {
             return;
         }
-
-        $courseid = reset($modules)->course;
-        massactionutils::enforce_cm_restrictions($courseid, $modules);
 
         foreach ($modules as $cm) {
             if ($visible && !$visibleonpage) {
@@ -149,7 +145,6 @@ class actions {
 
         // Needed to set the correct context.
         require_login($courseid);
-        massactionutils::enforce_cm_restrictions($courseid, $modules);
 
         $modinfo = get_fast_modinfo($courseid);
 
@@ -260,8 +255,6 @@ class actions {
             throw new required_capability_exception($targetcoursecontext,
                 'moodle/restore:restoretargetimport', 'nocaptorestore', 'block_massaction');
         }
-
-        massactionutils::enforce_cm_restrictions($sourcecourseid, $modules);
 
         $sourcemodinfo = get_fast_modinfo($sourcecourseid);
         $targetmodinfo = get_fast_modinfo($targetcourseid);
@@ -473,8 +466,6 @@ class actions {
         $PAGE->navbar->add($strdelcheck);
         echo $OUTPUT->header();
 
-        massactionutils::enforce_cm_restrictions($course->id, $modules);
-
         // Render the content.
         $content = $OUTPUT->render_from_template('block_massaction/deletionconfirm',
             ['modules' => $modulelist]);
@@ -502,9 +493,6 @@ class actions {
     public static function perform_deletion(array $modules): void {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/course/lib.php');
-
-        $courseid = reset($modules)->course;
-        massactionutils::enforce_cm_restrictions($courseid, $modules);
 
         foreach ($modules as $cm) {
             if (!$cm = get_coursemodule_from_id('', $cm->id, 0, true)) {
@@ -541,10 +529,6 @@ class actions {
         if (empty($modules)) {
             return;
         }
-
-        $courseid = reset($modules)->course;
-        massactionutils::enforce_cm_restrictions($courseid, $modules);
-
         $showdescriptionbit = $showdescription ? 1 : 0;
 
         $modinfo = get_fast_modinfo(reset($modules)->course);
@@ -586,8 +570,6 @@ class actions {
                 throw new moodle_exception('invalidcourseid');
             }
 
-            massactionutils::enforce_cm_restrictions($course->id, $modules);
-
             // Schedule adhoc task for delivering the course content updated notifications. Unfortunately, there is no core lib
             // function for this, so we have to c&p from modlib.php#393 (11.06.2022).
             // We keep in sync with the functionality there: If a course module is hidden from course page, but available, it will
@@ -619,9 +601,9 @@ class actions {
         require_once($CFG->dirroot . '/course/lib.php');
 
         $idsincourseorder = self::sort_course_order($modules);
+
         if (!empty($modules)) {
             $courseid = reset($modules)->course;
-            massactionutils::enforce_cm_restrictions($courseid, $modules);
             $filtersectionshook = new filter_sections_same_course(
                     $courseid,
                     array_keys(get_fast_modinfo($courseid)->get_section_info_all())

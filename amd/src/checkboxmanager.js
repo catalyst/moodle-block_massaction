@@ -25,7 +25,7 @@
 
 import Templates from 'core/templates';
 import {exception as displayException} from 'core/notification';
-import {cssIds, constants, usedMoodleCssClasses, getAllowedCmids} from './massactionblock';
+import {cssIds, constants, usedMoodleCssClasses} from './massactionblock';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
 import events from 'core_course/events';
 
@@ -144,10 +144,7 @@ export const setSectionSelection = (value, sectionNumber) => {
     }
     // Un/check the boxes.
     for (let i = 0; i < boxIds.length; i++) {
-        const checkbox = document.getElementById(boxIds[i]);
-        if (checkbox && !checkbox.disabled) {
-            checkbox.checked = value;
-        }
+        document.getElementById(boxIds[i]).checked = value;
     }
     // Reset dropdown to standard placeholder so we trigger a change event when selecting a section, then deselecting
     // everything and again select the same section.
@@ -158,9 +155,6 @@ export const setSectionSelection = (value, sectionNumber) => {
  * Scan all available checkboxes and add them to the data structure.
  */
 const addCheckboxesToDataStructure = () => {
-    const allowedCmids = getAllowedCmids();
-    const isCheckboxAllowed = cmid => allowedCmids.includes(parseInt(cmid));
-
     sections.forEach(section => {
         sectionBoxes[section.number] = [];
         const moduleIds = section.cmlist;
@@ -173,11 +167,6 @@ const addCheckboxesToDataStructure = () => {
                     'moduleId': modinfo.id.toString(),
                     'boxId': boxId,
                 });
-
-                const checkbox = document.getElementById(boxId);
-                if (checkbox && !isCheckboxAllowed(modinfo.id)) {
-                    checkbox.disabled = true;
-                }
             });
         }
     });
