@@ -30,7 +30,6 @@ import Pending from 'core/pending';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
 import events from "core_course/events";
 import {selectAllBulk, toggleBulkSelectionAction} from 'core_courseformat/local/content/actions/bulkselection';
-import {getCheckboxes} from 'block_massaction/checkboxmanager';
 
 export const usedMoodleCssClasses = {
     ACTIVITY_ITEM: '.activity-item',
@@ -120,7 +119,12 @@ export const init = async() => {
 
     document.getElementById(cssIds.SELECT_ALL_LINK)?.addEventListener('click',
         (event) => {
-            toggleBulkSelectionAction(editor, document.getElementById(getCheckboxes()[0].boxId), event, 'cm');
+            const checkboxes = checkboxmanager.getCheckboxes();
+            const elem = checkboxes[0] && document.getElementById(checkboxes[0].boxId);
+
+            if (elem && !checkboxmanager.getSelectedModIds(checkboxes).length) {
+                toggleBulkSelectionAction(editor, elem, event, 'cm'); // Check not toggling selected to unselected
+            }
             selectAllBulk(editor, true);
         }, false);
 
@@ -181,7 +185,7 @@ const submitAction = (action) => {
         'moduleIds': []
     };
 
-    submitData.moduleIds = checkboxmanager.getSelectedModIds();
+    submitData.moduleIds = checkboxmanager.getSelectedModIds(checkboxmanager.getCheckboxes());
 
     // Verify that at least one checkbox is checked.
     if (submitData.moduleIds.length === 0) {
