@@ -28,6 +28,7 @@ import {exception as displayException} from 'core/notification';
 import {cssIds, constants, usedMoodleCssClasses} from './massactionblock';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
 import events from 'core_course/events';
+import {toggleBulkSelectionAction} from 'core_courseformat/local/content/actions/bulkselection';
 
 let localStateUpdating = false;
 let sectionsChanged = false;
@@ -103,19 +104,21 @@ const rebuildLocalState = () => {
 /**
  * Returns the currently selected module ids.
  *
+ * @param {[]} checkboxes Array of checkboxes currently present.
  * @returns {[]} Array of module ids currently being selected
  */
-export const getSelectedModIds = () => {
-    const moduleIds = [];
-    for (let sectionNumber in sectionBoxes) {
-        for (let i = 0; i < sectionBoxes[sectionNumber].length; i++) {
-            const checkbox = document.getElementById(sectionBoxes[sectionNumber][i].boxId);
-            if (checkbox && checkbox.checked) {
-                moduleIds.push(sectionBoxes[sectionNumber][i].moduleId);
-            }
-        }
-    }
-    return moduleIds;
+export const getSelectedModIds = (checkboxes) => {
+    return checkboxes.filter(box => document.getElementById(box.boxId)?.checked).map(box => box.moduleId);
+};
+
+/**
+ * Returns the checkboxes currently present.
+ *
+ * @returns {[]} Array of checkboxes currently present.
+ */
+export const getCheckboxes = () => {
+    const checkboxes = Object.values(sectionBoxes).flat();
+    return checkboxes.filter(box => document.getElementById(box.boxId));
 };
 
 /**
@@ -124,33 +127,23 @@ export const getSelectedModIds = () => {
  * @param {boolean} value the checked value to set the checkboxes to
  * @param {string} sectionNumber the section number of the section which all modules should be checked/unchecked. Use "all" to
  *  select/deselect modules in all sections.
+ *  @param {MouseEvent} event the event that triggered the method
  */
-export const setSectionSelection = (value, sectionNumber) => {
-    const boxIds = [];
+export const setSectionSelection = (value, sectionNumber, event) => {
+    if (sectionNumber === constants.SECTION_SELECT_DESCRIPTION_VALUE) { return; }
 
-    if (typeof sectionNumber !== 'undefined' && sectionNumber === constants.SECTION_SELECT_DESCRIPTION_VALUE) {
-        // Description placeholder has been selected, do nothing.
-        return;
-    } else if (typeof sectionNumber !== 'undefined' && sectionNumber === constants.SECTION_NUMBER_ALL_PLACEHOLDER) {
-        // See if we are toggling all sections.
-        for (const sectionId in sectionBoxes) {
-            for (let j = 0; j < sectionBoxes[sectionId].length; j++) {
-                let boxId = sectionBoxes[sectionId][j].boxId;
-                if (document.getElementById(boxId) !== null) {
-                    boxIds.push(sectionBoxes[sectionId][j].boxId);
-                }
-            }
+    const courseEditor = getCurrentCourseEditor();
+
+    let boxIds = (sectionNumber === constants.SECTION_NUMBER_ALL_PLACEHOLDER)
+        ? getCheckboxes() : sectionBoxes[sectionNumber].map(box => box.boxId);
+
+    boxIds.forEach(boxId => {
+        const checkbox = document.getElementById(boxId);
+        if (checkbox && !checkbox.checked) {
+            toggleBulkSelectionAction(courseEditor, checkbox, event, 'cm');
         }
-    } else {
-        // We select all boxes of the given section.
-        sectionBoxes[sectionNumber].forEach(box => boxIds.push(box.boxId));
-    }
-    // Un/check the boxes.
-    for (let i = 0; i < boxIds.length; i++) {
-        document.getElementById(boxIds[i]).checked = value;
-    }
-    // Reset dropdown to standard placeholder so we trigger a change event when selecting a section, then deselecting
-    // everything and again select the same section.
+    });
+
     document.getElementById(cssIds.SECTION_SELECT).value = constants.SECTION_SELECT_DESCRIPTION_VALUE;
 };
 
@@ -208,7 +201,7 @@ const updateSelectionAndMoveToDropdowns = (sections, sectionsUnfiltered) => {
                 disableInvisibleAndEmptySections(sections);
                 // Re-register event listener.
                 document.getElementById(cssIds.SECTION_SELECT).addEventListener('change',
-                    (event) => setSectionSelection(true, event.target.value), false);
+                    (event) => setSectionSelection(true, event.target.value, event), false);
                 return true;
             })
             .catch(ex => displayException(ex));

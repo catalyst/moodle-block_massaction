@@ -29,6 +29,7 @@ import Notification from 'core/notification';
 import Pending from 'core/pending';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
 import events from "core_course/events";
+import {selectAllBulk, toggleBulkSelectionAction} from 'core_courseformat/local/content/actions/bulkselection';
 
 export const usedMoodleCssClasses = {
     ACTIVITY_ITEM: '.activity-item',
@@ -117,10 +118,18 @@ export const init = async() => {
         .catch(error => Log.debug(error));
 
     document.getElementById(cssIds.SELECT_ALL_LINK)?.addEventListener('click',
-        () => checkboxmanager.setSectionSelection(true, constants.SECTION_NUMBER_ALL_PLACEHOLDER), false);
+        (event) => {
+            const checkboxes = checkboxmanager.getCheckboxes();
+            const elem = checkboxes[0] && document.getElementById(checkboxes[0].boxId);
+
+            if (elem && !checkboxmanager.getSelectedModIds(checkboxes).length) {
+                toggleBulkSelectionAction(editor, elem, event, 'cm'); // Check not toggling selected to unselected
+            }
+            selectAllBulk(editor, true);
+        }, false);
 
     document.getElementById(cssIds.DESELECT_ALL_LINK)?.addEventListener('click',
-        () => checkboxmanager.setSectionSelection(false, constants.SECTION_NUMBER_ALL_PLACEHOLDER), false);
+        () => selectAllBulk(editor, false), false);
 
     document.getElementById(cssIds.HIDE_LINK)?.addEventListener('click',
         () => submitAction(actions.HIDE), false);
@@ -176,7 +185,7 @@ const submitAction = (action) => {
         'moduleIds': []
     };
 
-    submitData.moduleIds = checkboxmanager.getSelectedModIds();
+    submitData.moduleIds = checkboxmanager.getSelectedModIds(checkboxmanager.getCheckboxes());
 
     // Verify that at least one checkbox is checked.
     if (submitData.moduleIds.length === 0) {
