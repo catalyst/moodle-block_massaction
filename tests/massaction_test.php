@@ -1028,22 +1028,22 @@ final class massaction_test extends advanced_testcase {
         return [
             'url referencing a cmid in the map is rewritten' => [
                 'urlsuffix' => '?id=100',
-                'oldcmid' => 100,
+                'dummysourcecmid' => 100,
                 'expectrewrite' => true,
             ],
             'url not referencing any cmid in the map is unchanged' => [
                 'urlsuffix' => '?id=999',
-                'oldcmid' => 100,
+                'dummysourcecmid' => 100,
                 'expectrewrite' => false,
             ],
             'partial number match is not rewritten' => [
                 'urlsuffix' => '?id=123',
-                'oldcmid' => 12,
+                'dummysourcecmid' => 12,
                 'expectrewrite' => false,
             ],
             'empty map returns early and nothing is changed' => [
                 'urlsuffix' => '?id=100',
-                'oldcmid' => null,
+                'dummysourcecmid' => null,
                 'expectrewrite' => false,
             ],
         ];
@@ -1053,40 +1053,64 @@ final class massaction_test extends advanced_testcase {
      * Tests the rewrite_url_cm_references static method directly, covering normal operation
      * and edge cases.
      *
+     * We simulate the scenario of a URL activity that pointed at an assignment in some other
+     * course via its CMID. That other course CMID is a dummy value — it does not correspond
+     * to any real activity in the test database, it simply represents what the CMID would have
+     * looked like in the source course before duplication.
+     *
+     * We create a URL activity whose externalurl contains that dummy source CMID, and an
+     * assignment that represents the newly duplicated activity in the target course. The map
+     * pairs the dummy source CMID with the real CMID of the assignment, simulating the
+     * source => target CMID mapping that would be built during duplication. We then check
+     * whether the URL's externalurl was updated to point at the real assignment or left
+     * alone, depending on what we expect for each scenario.
+     *
      * @covers \block_massaction\actions::rewrite_url_cm_references
      * @dataProvider rewrite_url_cm_references_provider
-     * @param string $urlsuffix the query string to append to the base URL
-     * @param int|null $oldcmid the old CMID to put in the map, or null for empty map test
+     * @param string $urlsuffix the query string to append to the base URL, containing the dummy source CMID
+     * @param int|null $dummysourcecmid a dummy CMID representing an activity in the source course, or null for empty map test
      * @param bool $expectrewrite whether the URL is expected to be rewritten
      * @return void
      * @throws dml_exception
      * @throws moodle_exception
      */
-    public function test_rewrite_url_cm_references(string $urlsuffix, ?int $oldcmid, bool $expectrewrite): void {
+    public function test_rewrite_url_cm_references(string $urlsuffix, ?int $dummysourcecmid, bool $expectrewrite): void {
         global $DB, $CFG;
 
         $generator = $this->getDataGenerator();
         $courseid = $this->course->id;
 
-        // Create a URL activity with the given external URL.
         $baseurl = $CFG->wwwroot . '/mod/assign/view.php';
+
+        // Create an assignment representing the newly duplicated activity in the target course
+        // that the URL should point at after rewriting.
+        $assign = $generator->create_module('assign', ['course' => $courseid], ['section' => 0]);
+        $assigncm = get_coursemodule_from_instance('assign', $assign->id, $courseid);
+
+        // Create a URL activity whose externalurl contains a CMID baked into the URL suffix,
+        // simulating a URL that pointed at an activity in another course before duplication.
+        // Depending on the test case, this CMID may or may not match the dummy source CMID in the map.
         $url = $generator->create_module('url', [
             'course' => $courseid,
             'externalurl' => $baseurl . $urlsuffix,
         ], ['section' => 0]);
-        $urlcm = get_coursemodule_from_instance('url', $url->id, $courseid);
 
-        // Build the CMID map: empty if oldcmid is null, otherwise map oldcmid to the new URL's CMID.
-        $cmidmap = $oldcmid !== null ? [$oldcmid => $urlcm->id] : [];
+        // Build the CMID map: pairs the dummy source CMID with the real CMID of the newly
+        // created assignment, simulating the source => target CMID mapping built during duplication.
+        // Empty if dummysourcecmid is null, to test the early return behaviour.
+        $cmidmap = $dummysourcecmid !== null ? [$dummysourcecmid => $assigncm->id] : [];
 
         actions::rewrite_url_cm_references($cmidmap, $courseid);
 
         $urlrecord = $DB->get_record('url', ['id' => $url->id], '*', MUST_EXIST);
 
         if ($expectrewrite) {
-            $this->assertStringContainsString('id=' . $urlcm->id, $urlrecord->externalurl);
-            $this->assertStringNotContainsString('id=' . $oldcmid, $urlrecord->externalurl);
+            // The URL should now point at the real CMID of the assignment in the target course,
+            // replacing the dummy source CMID that was there before.
+            $this->assertStringContainsString('id=' . $assigncm->id, $urlrecord->externalurl);
+            $this->assertStringNotContainsString('id=' . $dummysourcecmid, $urlrecord->externalurl);
         } else {
+            // The URL should be completely unchanged, still containing the dummy source CMID.
             $this->assertEquals($baseurl . $urlsuffix, $urlrecord->externalurl);
         }
     }
