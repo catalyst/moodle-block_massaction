@@ -31,6 +31,7 @@ use require_login_exception;
 use restore_controller_exception;
 use stdClass;
 
+
 /**
  * block_massaction phpunit test class.
  *
@@ -961,5 +962,132 @@ final class massaction_test extends advanced_testcase {
 
         // The names of the duplicated modules should be the same as the source module names.
         $this->assertEquals($sourcemodulenames, $duplicatedmodulenames);
+    }
+
+    /**
+     * Tests that URL activities have their externalurl rewritten when duplicating to another course.
+     * Specifically, a URL pointing at an assignment in the source course should point at the
+     * newly duplicated assignment in the target course after duplication.
+     *
+     * @covers \block_massaction\actions::duplicate_to_course
+     * @return void
+     * @throws base_plan_exception
+     * @throws base_setting_exception
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws moodle_exception
+     * @throws restore_controller_exception
+     */
+    public function test_duplicate_to_course_rewrites_url_references(): void {
+        global $DB, $CFG;
+
+        $generator = $this->getDataGenerator();
+        $sourcecourseid = $this->course->id;
+
+        // Create an assignment in the source course.
+        $assign = $generator->create_module('assign', ['course' => $sourcecourseid], ['section' => 0]);
+        $assigncm = get_coursemodule_from_instance('assign', $assign->id, $sourcecourseid);
+
+        // Create a URL activity that points at the assignment via its CMID.
+        $externalurl = $CFG->wwwroot . '/mod/assign/view.php?id=' . $assigncm->id;
+        $url = $generator->create_module('url', ['course' => $sourcecourseid, 'externalurl' => $externalurl], ['section' => 0]);
+        $urlcm = get_coursemodule_from_instance('url', $url->id, $sourcecourseid);
+
+        // Set up a target course.
+        $targetcourseid = $this->setup_target_course_for_duplicating(1);
+
+        // Duplicate both the assignment and the URL to the target course.
+        $modules = $DB->get_records_select('course_modules', 'id IN (?, ?)', [$assigncm->id, $urlcm->id]);
+        block_massaction\actions::duplicate_to_course($modules, $targetcourseid);
+
+        // Find the newly duplicated assignment and URL in the target course.
+        $targetmodinfo = get_fast_modinfo($targetcourseid);
+        $targetassigns = $targetmodinfo->get_instances_of('assign');
+        $targeturls = $targetmodinfo->get_instances_of('url');
+
+        // There should be exactly one duplicated assignment and one duplicated URL.
+        $this->assertCount(1, $targetassigns);
+        $this->assertCount(1, $targeturls);
+
+        $newassigncm = reset($targetassigns);
+        $newurlcm = reset($targeturls);
+
+        // The URL in the target course should point at the new assignment CMID, not the original.
+        $newurlrecord = $DB->get_record('url', ['id' => $newurlcm->instance], '*', MUST_EXIST);
+        $expectedurl = $CFG->wwwroot . '/mod/assign/view.php?id=' . $newassigncm->id;
+        $this->assertEquals($expectedurl, $newurlrecord->externalurl);
+        $this->assertStringNotContainsString('id=' . $assigncm->id, $newurlrecord->externalurl);
+    }
+
+    /**
+     * Data provider for test_rewrite_url_cm_references.
+     *
+     * @return array
+     */
+    public static function rewrite_url_cm_references_provider(): array {
+        return [
+            'url referencing a cmid in the map is rewritten' => [
+                'urlsuffix' => '?id=100',
+                'oldcmid' => 100,
+                'expectrewrite' => true,
+            ],
+            'url not referencing any cmid in the map is unchanged' => [
+                'urlsuffix' => '?id=999',
+                'oldcmid' => 100,
+                'expectrewrite' => false,
+            ],
+            'partial number match is not rewritten' => [
+                'urlsuffix' => '?id=123',
+                'oldcmid' => 12,
+                'expectrewrite' => false,
+            ],
+            'empty map returns early and nothing is changed' => [
+                'urlsuffix' => '?id=100',
+                'oldcmid' => null,
+                'expectrewrite' => false,
+            ],
+        ];
+    }
+
+    /**
+     * Tests the rewrite_url_cm_references static method directly, covering normal operation
+     * and edge cases.
+     *
+     * @covers \block_massaction\actions::rewrite_url_cm_references
+     * @dataProvider rewrite_url_cm_references_provider
+     * @param string $urlsuffix the query string to append to the base URL
+     * @param int|null $oldcmid the old CMID to put in the map, or null for empty map test
+     * @param bool $expectrewrite whether the URL is expected to be rewritten
+     * @return void
+     * @throws dml_exception
+     * @throws moodle_exception
+     */
+    public function test_rewrite_url_cm_references(string $urlsuffix, ?int $oldcmid, bool $expectrewrite): void {
+        global $DB, $CFG;
+
+        $generator = $this->getDataGenerator();
+        $courseid = $this->course->id;
+
+        // Create a URL activity with the given external URL.
+        $baseurl = $CFG->wwwroot . '/mod/assign/view.php';
+        $url = $generator->create_module('url', [
+            'course' => $courseid,
+            'externalurl' => $baseurl . $urlsuffix,
+        ], ['section' => 0]);
+        $urlcm = get_coursemodule_from_instance('url', $url->id, $courseid);
+
+        // Build the CMID map: empty if oldcmid is null, otherwise map oldcmid to the new URL's CMID.
+        $cmidmap = $oldcmid !== null ? [$oldcmid => $urlcm->id] : [];
+
+        actions::rewrite_url_cm_references($cmidmap, $courseid);
+
+        $urlrecord = $DB->get_record('url', ['id' => $url->id], '*', MUST_EXIST);
+
+        if ($expectrewrite) {
+            $this->assertStringContainsString('id=' . $urlcm->id, $urlrecord->externalurl);
+            $this->assertStringNotContainsString('id=' . $oldcmid, $urlrecord->externalurl);
+        } else {
+            $this->assertEquals($baseurl . $urlsuffix, $urlrecord->externalurl);
+        }
     }
 }

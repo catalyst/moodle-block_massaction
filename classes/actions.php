@@ -326,7 +326,10 @@ class actions {
             }
         }
 
+        // Sort the selected modules into the order they appear in the source course, so duplicates
+        // land in the target course in the same relative order.
         $idsincourseorder = self::sort_course_order($modules);
+
         // We now duplicate the modules in the order they have in the course. That way the duplicated modules will be correctly
         // sorted by their id:
         // Let order of mods in a section be mod1, mod2, mod3, mod4, mod5. If we duplicate mod2, mod4, the order afterwards will be
@@ -334,6 +337,7 @@ class actions {
         $duplicatedmods = [];
         $cms = [];
         $errors = [];
+
         $filtersectionshook = new filter_sections_same_course($sourcecourseid, array_keys($sourcemodinfo->get_section_info_all()));
         \core\di::get(\core\hook\manager::class)->dispatch($filtersectionshook);
         $srcfilteredsections = $filtersectionshook->get_sectionnums();
@@ -346,6 +350,9 @@ class actions {
             }
 
             try {
+                // Each activity is restored individually, so the restore pipeline's link-decoder cannot rewrite
+                // URL activities that link to other activities in the same batch. We handle that ourselves via
+                // rewrite_url_cm_references() further below after all activities have been duplicated.
                 $duplicatedmod = massactionutils::duplicate_cm_to_course($targetmodinfo->get_course(),
                     $sourcemodinfo->get_cm($cmid));
             } catch (\Exception $e) {
@@ -360,19 +367,28 @@ class actions {
                 $event->trigger();
                 continue;
             }
+
             $cms[$cmid] = $duplicatedmod;
             $duplicatedmods[] = $duplicatedmod;
         }
 
-        // We need to reload new course structure.
+        // Reload the target course structure — the duplicated modules did not exist when
+        // $targetmodinfo was first loaded. We need a fresh copy here for the moveto_module() calls below.
         $targetmodinfo = get_fast_modinfo($targetcourseid);
         $targetsection = $targetmodinfo->get_section_info($sectionnum);
+
         if ($sectionnum != -1) {
             // A target section has been specified, so we have to move the course modules.
             foreach ($duplicatedmods as $modid) {
                 moveto_module($targetmodinfo->get_cm($modid), $targetsection);
             }
         }
+
+        // Now that all activities have been duplicated and we have a complete old => new CMID
+        // map in $cms, rewrite any URL activities in the target course whose externalurl still
+        // references a CMID from the source course.
+        self::rewrite_url_cm_references($cms, $targetcourseid);
+
         $event = \block_massaction\event\course_modules_duplicated::create([
             'context' => \context_course::instance($sourcecourseid),
             'other' => [
@@ -662,5 +678,57 @@ class actions {
         });
 
         return $idsincourseorder;
+    }
+
+    /**
+     * Rewrites externalurl fields in URL activities where those URLs reference CMIDs that
+     * have been remapped (e.g. after duplicating or restoring activities to another course).
+     *
+     * When activities are backed up and restored one at a time, each restore operation is
+     * isolated and has no knowledge of CMIDs created by other restore operations in the same
+     * batch. This means the restore pipeline's own link-decoder cannot fix cross-activity
+     * links. This method solves that by applying the rewrite manually using a caller-supplied
+     * CMID map.
+     *
+     * This method is intentionally general-purpose: it can be used anywhere a batch of
+     * activities has been copied or restored and a CMID map is available.
+     *
+     * @param array $cmidmap Map of old CMID => new CMID for the activities in this batch.
+     * @param int $courseid The course ID containing the URL activities to be rewritten.
+     * @throws dml_exception if the database read or write fails.
+     */
+    public static function rewrite_url_cm_references(array $cmidmap, int $courseid): void {
+        global $DB;
+
+        if (empty($cmidmap)) {
+            return;
+        }
+
+        // Load the course structure fresh, to make sure any recently
+        // created modules appear in the cached modinfo.
+        $modinfo = get_fast_modinfo($courseid);
+
+        // Check every new CMID in the map — only URL activities need rewriting.
+        foreach (array_values($cmidmap) as $cmid) {
+            $cm = $modinfo->get_cm($cmid);
+            if ($cm->modname !== 'url') {
+                continue;
+            }
+            $urlrecord = $DB->get_record('url', ['id' => $cm->instance], '*', MUST_EXIST);
+            $originalurl = $urlrecord->externalurl;
+            foreach ($cmidmap as $oldcmid => $replacementcmid) {
+                // Use a word boundary (\b) to avoid partial matches,
+                // e.g. preventing id=12 from matching inside id=123.
+                $urlrecord->externalurl = preg_replace(
+                    '/\bid=' . preg_quote($oldcmid, '/') . '\b/',
+                    'id=' . $replacementcmid,
+                    $urlrecord->externalurl
+                );
+            }
+            // Only write to the database if the URL actually changed.
+            if ($urlrecord->externalurl !== $originalurl) {
+                $DB->update_record('url', $urlrecord);
+            }
+        }
     }
 }
